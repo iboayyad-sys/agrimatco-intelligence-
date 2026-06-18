@@ -1,0 +1,16 @@
+{
+  "home": {
+    "title": "AI-Powered Crop Health Diagnosis",
+    "subtitle": "Upload images of your crops and get instant diagnosis with personalized Agrimatco product recommendations",
+    "getStarted": "Get Started",
+    "signUp": "Sign Up Free",
+    "login": "Login",
+    "features": "Core Features",
+    "feature1Title": "Image Analysis",
+    "feature1Desc": "Upload crop images for instant AI-powered diagnosis",
+    "feature2Title": "AI Assistant",
+    "feature2Desc": "Chat with our intelligent crop health advisor",
+    "feature3Title": "Product Match",
+    "feature3Desc": "Get personalized Agrimatco product recommendations"
+  }
+}
