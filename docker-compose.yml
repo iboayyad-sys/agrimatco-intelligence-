@@ -1,0 +1,95 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: agrimatco-postgres
+    environment:
+      POSTGRES_USER: agrimatco
+      POSTGRES_PASSWORD: agrimatco_password
+      POSTGRES_DB: agrimatco_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agrimatco"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agrimatco-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: agrimatco-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agrimatco-network
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agrimatco-backend
+    environment:
+      DATABASE_URL: postgresql://agrimatco:agrimatco_password@postgres:5432/agrimatco_db
+      REDIS_URL: redis://redis:6379/0
+      API_ENV: development
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-this}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - uploads:/app/uploads
+    networks:
+      - agrimatco-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: agrimatco-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - agrimatco-network
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads:
+
+networks:
+  agrimatco-network:
+    driver: bridge
